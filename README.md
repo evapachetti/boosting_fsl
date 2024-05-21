@@ -4,4 +4,4 @@ Official code for [**Boosting Few-Shot Learning with Disentangled Self-Supervise
 ![boosting_fsl](./img/boosting_fsl.png)
 
 ## Dataset
-We utilized the [PI-CAI](https://pi-cai.grand-challenge.org/) and [BreakHis](https://web.inf.ufpr.br/vri/databases/breast-cancer-histopathological-database-breakhis/) datasets for our experiments. To see pre-processing details, please refer to our [paper](https://arxiv.org/abs/2403.17530).
+We utilized the [PI-CAI](https://zenodo.org/records/6517398) and [BreakHis](https://web.inf.ufpr.br/vri/databases/breast-cancer-histopathological-database-breakhis/) datasets for our experiments. To see pre-processing details, please refer to our [paper](https://arxiv.org/abs/2403.17530).
