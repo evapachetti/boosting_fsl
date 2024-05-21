@@ -5,3 +5,14 @@ Official code for [**Boosting Few-Shot Learning with Disentangled Self-Supervise
 
 ## Dataset
 We utilized the [PI-CAI](https://zenodo.org/records/6517398) and [BreakHis](https://web.inf.ufpr.br/vri/databases/breast-cancer-histopathological-database-breakhis/) datasets for our experiments. To see pre-processing details, please refer to our [paper](https://arxiv.org/abs/2403.17530).
+
+## Citation
+
+```bibtex
+@article{pachetti2024boosting,
+  title={Boosting Few-Shot Learning with Disentangled Self-Supervised Learning and Meta-Learning for Medical Image Classification},
+  author={Pachetti, Eva and Tsaftaris, Sotirios A and Colantonio, Sara},
+  journal={arXiv preprint arXiv:2403.17530},
+  year={2024}
+}
+```
