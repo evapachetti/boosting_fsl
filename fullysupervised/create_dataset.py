@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author: Eva Pachetti
+Author: Eva Pachetti
 """
 
 import torch
@@ -28,6 +28,9 @@ class BREAKHISDataset2D(data.Dataset):
 
         Methods:
         -------
+        __init__(csv_path, folder_name="supervised"):
+            Initializes the dataset by loading the metadata from the CSV file and setting 
+            up the directory path for images.
         __len__():
             Returns the total number of samples in the dataset.
         
@@ -86,7 +89,7 @@ class ToTensorBREAKHISDataset2D(torch.utils.data.Subset):
     Methods:
     -------
     __getitem__(idx):
-        Retrieve the sample (image and label) at the specified index and apply the transformation.
+        Retrieve the sample (image and label) at the specified index and apply the tensor transformation.
     
     __len__():
         Return the total number of samples in the dataset after transformation.
@@ -94,14 +97,11 @@ class ToTensorBREAKHISDataset2D(torch.utils.data.Subset):
     Parameters:
     ----------
     dataset : torch.utils.data.Dataset
-        The original dataset containing image samples and their labels.
-    transform : callable, optional
-        A function/transform to be applied to the samples. Default is None.
+        The dataset containing image samples and their labels.
     """
     
-    def __init__(self, dataset, transform=None):
+    def __init__(self, dataset):
         self.dataset = dataset
-        self.transform = transform
 
     def __getitem__(self, idx):
         image = self.dataset[idx][0]
@@ -118,6 +118,37 @@ class ToTensorBREAKHISDataset2D(torch.utils.data.Subset):
 #%% PICAI Dataset
 
 class PICAIDataset2D(data.Dataset):
+
+    """
+    Custom Dataset for loading and preprocessing the PI-CAI dataset for 2D image classification.
+
+    Attributes:
+    -----------
+    info : pandas.DataFrame
+        DataFrame containing metadata for the dataset, loaded from the provided CSV file.
+    parent_path : str
+        The parent directory path of the current working directory.
+    dir_path : str
+        The directory path where the images are stored, constructed from the parent path 
+        and a folder name.
+
+    Methods:
+    --------
+    __init__(csv_path, folder_name="supervised"):
+        Initializes the dataset by loading the metadata from the CSV file and setting 
+        up the directory path for images.
+    __len__():
+        Returns the number of samples in the dataset.
+    __getitem__(idx):
+        Retrieves the image and label corresponding to the given index.
+    
+    Parameters:
+    -----------
+    csv_path : str
+        Path to the CSV file containing the dataset metadata.
+    folder_name : str, optional
+        Name of the folder containing the images (default is "supervised").
+    """
 
     def __init__(self, csv_path, folder_name = "supervised"):
         self.info = pd.read_csv(csv_path)
@@ -141,6 +172,32 @@ class PICAIDataset2D(data.Dataset):
         
 
 class ToTensorPICAIDataset2D(torch.utils.data.Subset):
+
+    """
+    Dataset class to convert PI-CAI dataset samples to PyTorch tensors.
+
+    This class inherits from torch.utils.data.Subset.
+
+    Attributes:
+    ----------
+    dataset : torch.utils.data.Dataset
+        The original dataset containing image samples and their labels.
+    transform : callable, optional
+        A function/transform to be applied to the samples. Default is None.
+
+    Methods:
+    -------
+    __getitem__(idx):
+        Retrieve the sample (image and label) at the specified index and apply the tensor transformation.
+    
+    __len__():
+        Return the total number of samples in the dataset after transformation.
+
+    Parameters:
+    ----------
+    dataset : torch.utils.data.Dataset
+        The dataset containing image samples and their labels.
+    """
 
     def __init__(self, dataset):
         self.dataset = dataset

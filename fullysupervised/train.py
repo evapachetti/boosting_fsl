@@ -1,7 +1,39 @@
 # -*- coding: utf-8 -*-
 """
-@author: Eva Pachetti
+Script for training and evaluating a neural network model on specified datasets according to a fully-supervised approach.
+
+This script includes the following functionalities:
+1. Setting the random seed for reproducibility.
+2. Loading and modifying pretrained models for fine-tuning.
+3. Evaluating the model on a dataset.
+4. Training the model with periodic evaluation on a validation set, including early stopping.
+5. Plotting the training and validation AUROC and loss over epochs.
+6. Saving the best model based on validation performance.
+7. Evaluating the final model on training, validation, and test datasets.
+
+The script supports training and evaluation on the PI-CAI and BreakHis datasets.
+
+Parameters are provided via command line arguments, including:
+- Seed for reproducibility.
+- Dataset choice.
+- Number of epochs.
+- Batch size.
+- Number of classes.
+- Learning rate.
+- Weight decay.
+- Margin for loss function.
+- Epoch decay for learning rate schedule.
+- Flags to specify whether to train or evaluate the model.
+- Paths to save models and results.
+- Choice of pretrained network to fine-tune.
+
+Example usage:
+    python script_name.py --train --num_epochs 100 --dataset picai --batch_size 30 --pretrained_net Resnet18
+
+Author:
+    Eva Pachetti
 """
+
 
 #%% Import libraries
 import os
@@ -65,9 +97,57 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True  # This might affect performance
 
 
+def get_model(args):
+    """
+        Loads a pretrained model and modifies the final classification layer to match the number of classes.
 
-#%% Functions
+        Parameters:
+        args (argparse.Namespace): Arguments containing the chosen model and number of classes attributes
+        Returns:
+        torch.nn.Module: The modified pretrained model ready for training or evaluation.
+
+        Raises:
+        ValueError: If an unsupported model name is provided in args.pretrained_net.
+    """
+    model_mappings = {
+        'Resnet18': models.resnet18,
+        'Resnet50': models.resnet50,
+        'VGG16': models.vgg16,
+        'Densenet121': models.densenet121
+    }
+    
+    if args.pretrained_net not in model_mappings:
+        raise ValueError(f"Unsupported model: {args.pretrained_net}")
+
+    model = model_mappings[args.pretrained_net](pretrained=True)
+
+    if 'resnet' in args.pretrained_net.lower():
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, args.num_classes)
+    elif args.pretrained_net == 'VGG16':
+        model.classifier[6] = nn.Linear(4096, args.num_classes)
+    elif args.pretrained_net == 'Densenet121':
+        model.classifier = nn.Linear(1024, args.num_classes)
+    
+    return model
+
+
 def evaluate_model(model, loader, device, loss_fn, binary):
+    """
+    Evaluates a given model on a provided data loader using a specified loss function.
+
+    Parameters:
+    model (torch.nn.Module): The model to evaluate.
+    loader (torch.utils.data.DataLoader): The data loader providing the evaluation dataset.
+    device (torch.device): The device on which to perform the evaluation (e.g., 'cpu' or 'cuda').
+    loss_fn (torch.nn.Module): The loss function to use for calculating losses.
+    binary (bool): Indicates whether the task is binary classification (True) or multi-class classification (False).
+
+    Returns:
+    tuple: A tuple containing:
+        - float: The average loss over the evaluation dataset.
+        - float: The ROC AUC score for the evaluation dataset. For binary classification, this is computed for the positive class. For multi-class classification, the macro-average ROC AUC score is computed using a one-vs-rest approach.
+    """
     model.eval()
     losses, true_labels, class_probabilities = [],[],[]
 
@@ -95,6 +175,31 @@ def evaluate_model(model, loader, device, loss_fn, binary):
     return np.mean(losses), roc_auc
 
 def train(params, model, train_loader, train_for_eval_loader, val_loader, loss_fn, optimizer, device, num_epochs, decay_epochs):
+    """
+    Trains a model and evaluates it periodically on a validation set, with early stopping based on validation performance.
+
+    Parameters:
+    params (argparse.Namespace): Parameters containing the a series of attributes.
+    model (torch.nn.Module): The model to train.
+    train_loader (torch.utils.data.DataLoader): Data loader for the training dataset.
+    train_for_eval_loader (torch.utils.data.DataLoader): Data loader for the training dataset used for evaluation.
+    val_loader (torch.utils.data.DataLoader): Data loader for the validation dataset.
+    loss_fn (torch.nn.Module): The loss function to use for training.
+    optimizer (torch.optim.Optimizer): The optimizer to use for training.
+    device (torch.device): The device on which to perform training (e.g., 'cpu' or 'cuda').
+    num_epochs (int): The number of epochs to train the model.
+    decay_epochs (list of int): Epochs at which to decay the learning rate by a factor of 10.
+
+    Returns:
+    tuple: A tuple containing:
+        - torch.nn.Module: The best model based on validation AUROC.
+        - int: The epoch at which the best model was obtained.
+        - list of float: The AUROC scores on the training dataset over the epochs.
+        - list of float: The AUROC scores on the validation dataset over the epochs.
+        - list of float: The average training losses over the epochs.
+        - list of float: The average validation losses over the epochs.
+    """
+
     aurocs_train, aurocs_val, losses_train, losses_val = [],[],[],[]
 
     best_AUROC = 0.0
@@ -151,8 +256,8 @@ def main():
         description='Train a neural network to be used as backbone for further experiments'
     )
     parser.add_argument("--seed", default=42, type=int, help="Reproducibility seed")
-    parser.add_argument("--dataset", default="picai", choices=["picai", "breakhis"], type=str, help="Dataset to train on")
-    parser.add_argument("--num_epochs", default=100, choices=[100, 400], type=int, help="Number of epochs to train")
+    parser.add_argument("--dataset", default="picai", choices=["picai", "breakhis"], type=str, help="Dataset on which to train")
+    parser.add_argument("--num_epochs", default=100, choices=[100, 400], type=int, help="Number of epochs")
     parser.add_argument("--batch_size", default=30, type=int, help="Batch size for training")
     parser.add_argument("--num_classes", default=1, type=int, help="Number of classes")
     parser.add_argument("--learning_rate", default=1e-1, type=float, help="Learning rate")
@@ -196,29 +301,7 @@ def main():
     device = torch.device("cuda")
 
     #Model
-    if args.pretrained_net == 'Resnet18':
-        model = models.resnet18(pretrained=True)
-        if args.dataset == 'picai':
-            model.conv1 = nn.Conv2d(1,64,kernel_size=7, stride=2, padding=3, bias=False) 
-        num_ftrs = model.fc.in_features
-        model.fc = nn.Linear(num_ftrs, args.num_classes) 
-    elif args.pretrained_net == 'Resnet50':
-        model = models.resnet50(pretrained=True)
-        if args.dataset == 'picai':
-            model.conv1 = nn.Conv2d(1,64,kernel_size=7, stride=2, padding=3, bias=False) 
-        num_ftrs = model.fc.in_features
-        model.fc = nn.Linear(num_ftrs, args.num_classes)
-    elif args.pretrained_net == 'VGG16':
-        model = models.vgg16(pretrained=True)
-        if args.dataset == 'picai':
-            model.features[0] = nn.Conv2d(1, 64, kernel_size=(3,3), stride=(1,1), padding=(1,1))
-        model.classifier[6] = nn.Linear(4096, args.num_classes)
-    elif args.pretrained_net == 'Densenet121':
-        model = models.densenet121(pretrained=True)
-        if args.dataset == 'picai':
-            model.features.conv0 = nn.Conv2d(1, 64, kernel_size=(7,7), stride=(2,2), padding=(3,3))
-        model.classifier = nn.Linear(1024, args.num_classes)
-        
+    model = get_model(args)
 
     #Loss function and optimizer
     loss_fn = AUCMLoss()
@@ -265,9 +348,6 @@ def main():
         plt.title('Loss')
         plt.show()
         plt.savefig(os.path.join(save_path,"LOSS.pdf"))
-
-        np.save(os.path.join(args.output_path,"auroc_val.npy"),np.array(aurocs_val))
-        np.save(os.path.join(args.output_path,"auroc_train.npy"),np.array(aurocs_train))
 
 
     if args.evaluate:
