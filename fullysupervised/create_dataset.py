@@ -28,7 +28,7 @@ class BREAKHISDataset2D(data.Dataset):
 
         Methods:
         -------
-        __init__(csv_path, folder_name="supervised"):
+        __init__(csv_path, cls_type = "binary", folder_name="supervised"):
             Initializes the dataset by loading the metadata from the CSV file and setting 
             up the directory path for images.
         __len__():
@@ -43,15 +43,17 @@ class BREAKHISDataset2D(data.Dataset):
             Path to the CSV file containing dataset information.
         cls_type : str, optional
             The type of classification task. Default is "binary". Must be either "binary" or "multiclass".
+        folder_name : str, optional
+            Name of the folder containing the images (default is "supervised").
     """
     
-    def __init__(self, csv_path, cls_type = "binary"):
+    def __init__(self, csv_path, cls_type = "binary", folder_name = "supervised"):
         
         self.cls_type = cls_type
         assert self.cls_type in ["binary","multiclass"]
         self.info = pd.read_csv(csv_path)
         self.parent_path = os.path.dirname(os.getcwd())
-        self.dir_path = os.path.join(self.parent_path,"BreakHis_dataset","dataset")
+        self.dir_path = os.path.join(self.parent_path,"dataset","breakhis",folder_name)
        
     def __len__ (self):
             return len(self.info)
@@ -153,7 +155,7 @@ class PICAIDataset2D(data.Dataset):
     def __init__(self, csv_path, folder_name = "supervised"):
         self.info = pd.read_csv(csv_path)
         self.parent_path = os.path.dirname(os.getcwd())
-        self.dir_path = os.path.join(self.parent_path,"picai",folder_name)
+        self.dir_path = os.path.join(self.parent_path,"dataset","picai",folder_name)
       
     def __len__ (self):
             return len(self.info)
