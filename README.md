@@ -5,7 +5,20 @@ Official code for [**Boosting Few-Shot Learning with Disentangled Self-Supervise
 
 ## Dataset
 We utilized the [PI-CAI](https://zenodo.org/records/6517398) and [BreakHis](https://web.inf.ufpr.br/vri/databases/breast-cancer-histopathological-database-breakhis/) datasets for our experiments. To see pre-processing details, please refer to our [paper](https://arxiv.org/abs/2403.17530).
+Based on our code, the data should be organized according to the following structure:
+```
+├── dataset
+│   └── picai
+│       ├── supervised                            
+│       ├── unsupervised
+│       ├── csv_files
+│   └── breakhis
+│       ├── supervised                            
+│       ├── unsupervised
+│       ├── csv_files
 
+```
+Here, *supervised* contains the samples used for supervised training, *unsupervised* the samples for the unsupervised pre-training steps, and *csv_files* the CSV files from which to retrieve the sample metadata.
 ## Citation
 
 ```bibtex
