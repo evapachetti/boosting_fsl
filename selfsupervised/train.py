@@ -23,8 +23,8 @@ import torch.nn.functional as F
 from torchvision import transforms
 
 #PI-CAI dataset
-from create_self_supervised_dataset import PICAIDataset2DSSL, PICAIToTensorDataset2DSSL, BREAKHISDataset2DSSL, BREAKHISToTensorDataset2DSSL
-from create_supervised_dataset import PICAIDataset2D, ToTensorPICAIDataset2D, BREAKHISDataset2D, ToTensorBREAKHISDataset2D
+from create_dataset_ssl import PICAIDatasetSSL, ToTensorPICAIDatasetSSL, BREAKHISDatasetSSL, ToTensorBREAKHISDatasetSSL
+from create_dataset import PICAIDataset, ToTensorPICAIDataset, BREAKHISDataset, ToTensorBREAKHISDataset
 
 ## SimCLR class
 from simclr import SimCLR
@@ -315,15 +315,13 @@ def main():
     if torch.cuda.is_available():
         device = torch.device("cuda")
 
-   
-
     
     if args.ssl_pretrain:
 
         # Select the dataset and transformation based on the pretrain_dataset argument
         dataset_mapping = {
-            "picai": (PICAIDataset2DSSL, PICAIToTensorDataset2DSSL),
-            "breakhis": (BREAKHISDataset2DSSL, BREAKHISToTensorDataset2DSSL)
+            "picai": (PICAIDatasetSSL, ToTensorPICAIDatasetSSL),
+            "breakhis": (BREAKHISDatasetSSL, ToTensorBREAKHISDatasetSSL)
         }
 
         model = SimCLR(
@@ -343,7 +341,7 @@ def main():
                                                                      saturation=0.5,
                                                                      hue=0.1)
                                           ], p=0.8),
-                                          #transforms.RandomGrayscale(p=0.2),
+                                          transforms.RandomGrayscale(p=0.2),
                                           transforms.GaussianBlur(kernel_size=9),
                                           transforms.ToTensor()
                                          ])
@@ -361,7 +359,7 @@ def main():
         # Create the directory if it doesn't exist
         os.makedirs(root_path, exist_ok=True)
 
-        Dataset, ToTensorDataset = dataset_mapping.get(args.pretrain_dataset, (PICAIDataset2DSSL, PICAIToTensorDataset2DSSL))
+        Dataset, ToTensorDataset = dataset_mapping.get(args.pretrain_dataset, (PICAIDatasetSSL, ToTensorPICAIDatasetSSL))
 
         # Create datasets
         trainset = Dataset(args.csv_path_train)
@@ -386,15 +384,15 @@ def main():
 
         # Select the dataset and transformation based on the pretrain_dataset argument
         dataset_mapping = {
-            "picai": (PICAIDataset2D, ToTensorPICAIDataset2D),
-            "breakhis": (BREAKHISDataset2D, ToTensorBREAKHISDataset2D)
+            "picai": (PICAIDataset, ToTensorPICAIDataset),
+            "breakhis": (BREAKHISDataset, ToTensorBREAKHISDataset)
         }
       
         csv_path_train = args.csv_path_train
         csv_path_val = args.csv_path_val
         csv_path_test = args.csv_path_test
 
-        Dataset, ToTensorDataset = dataset_mapping.get(args.finetune_dataset, (PICAIDataset2DSSL, PICAIToTensorDataset2DSSL))
+        Dataset, ToTensorDataset = dataset_mapping.get(args.finetune_dataset, (PICAIDatasetSSL, ToTensorPICAIDatasetSSL))
 
 
         trainset = Dataset(csv_path_train)
