@@ -63,7 +63,6 @@ class BREAKHISDataset(data.Dataset):
                 idx = idx.tolist() # lo converto in una lista
             image = str(self.info.iloc[idx]['image'])
             image_path = os.path.join(self.dir_path, image+".png")
-        
             image = Image.open(image_path)
             
             if self.cls_type == "binary":
@@ -166,7 +165,7 @@ class PICAIDataset(data.Dataset):
             patient = str(self.info.iloc[idx]['patient_id'])
             study = str(self.info.iloc[idx]['study_id'])
             s = str(self.info.iloc[idx]['slice'])
-            image_path = os.path.join(self.dir_path, patient+"_"+study+"_"+s+".png")
+            image_path = os.path.join(self.dir_path, f"{patient}_{study}_{s}.png")
             image = Image.open(image_path)
             label = int(self.info.iloc[idx]['label'])
     
