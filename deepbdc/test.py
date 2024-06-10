@@ -59,17 +59,10 @@ def main():
     parser.add_argument('--metatrain_dataset', default='picai', choices=['picai','breakhis'])
     parser.add_argument('--metatest_dataset', default='picai', choices=['picai','breakhis'])
 
-    parser.add_argument('--data_path', type=str)
     parser.add_argument('--model', default='Resnet18', choices=['Resnet18', 'Resnet50','Resnet18CA', 'Resnet50CA','Resnet18Ablation','VGG16','Densenet'])
     parser.add_argument('--method', default='stl_deepbdc', choices=['meta_deepbdc', 'stl_deepbdc', 'protonet', 'good_embed'])
     parser.add_argument("--feature_dim", default=128, type=int, help="Embedding size")
-    parser.add_argument('--causality_aware', default=False, action="store_true")
-    parser.add_argument('--causality_method', default="max", choices=["max","lehmer"])
-    parser.add_argument('--lehmer_param', default=None, type=int, choices=[-100,-2,-1,0,1,100])
-    parser.add_argument('--causality_setting', default="mulcat", choices=["mulcat","mulcatbool"])
 
-    parser.add_argument('--csv_path_train', default='', type=str, help='trainset path')
-    parser.add_argument('--csv_path_val', default='', type=str, help='valset path')
     parser.add_argument('--csv_path_test', default='', type=str, help='testset path')
 
     parser.add_argument('--test_n_way', default=5, type=int, help='number of classes used for testing (validation)')
@@ -82,13 +75,8 @@ def main():
     parser.add_argument('--model_path', default='', help='meta-trained or pre-trained model .tar file path')
     parser.add_argument('--output_path', default='', help='results output path')
     parser.add_argument('--test_task_nums', default=5, type=int, help='test numbers')
-    parser.add_argument('--gpu', default='0', help='gpu id')
 
-    parser.add_argument('--ablation', default=False, action="store_true", help='Whether to perform ablation study')
-
-    parser.add_argument('--penalty_C', default=0.1, type=float, help='logistic regression penalty parameter')
     parser.add_argument('--reduce_dim', default=640, type=int, help='the output dimensions of BDC dimensionality reduction layer')
-    parser.add_argument('--dropout_rate', default=0.5, type=float, help='dropout rate for pretrain and distillation')
 
     params = parser.parse_args()
 
@@ -96,12 +84,6 @@ def main():
 
     test_datamgr = SetDataManager(params.csv_path_test, params.image_size, n_query=params.n_query, n_episode=params.test_n_episode, **test_few_shot_params)
     test_loader = test_datamgr.get_data_loader(data=params.metatest_dataset)
-
-    val_datamgr = SetDataManager(params.csv_path_val, params.image_size, n_query=params.n_query, n_episode=params.test_n_episode, **test_few_shot_params)
-    val_loader = val_datamgr.get_data_loader(data=params.metatest_dataset)
-
-    train_datamgr = SetDataManager(params.csv_path_train, params.image_size, n_query=params.n_query, n_episode=params.test_n_episode, **test_few_shot_params)
-    train_loader = train_datamgr.get_data_loader(data=params.metatrain_dataset)
 
     #Define pre-trained model
     if params.pretrain_method == 'SimCLR':
@@ -118,10 +100,7 @@ def main():
         pretrained_model = None
 
     #Define finetuned model
-    if params.method == 'protonet':
-        model = ProtoNet(params, model_dict[params.model](params, pre_trained_model=pretrained_model), **test_few_shot_params)
-    elif params.method == 'meta_deepbdc':
-        model = MetaDeepBDC(params, model_dict[params.model](params,pre_trained_model=pretrained_model), **test_few_shot_params)
+    model = MetaDeepBDC(params, model_dict[params.model](params,pre_trained_model=pretrained_model), **test_few_shot_params)
         
     # model save path
     model = model.cuda()
@@ -132,20 +111,9 @@ def main():
 
     metrics = ["AUROC"]
 
-    results_train,_,_ = evaluate(train_loader,model,params)
-    results_val,_,_ = evaluate(val_loader,model,params)
     results_test,y,auroc_softmax_scores = evaluate(test_loader,model,params)
 
     with open(os.path.join(params.output_path,'results.txt'), 'w') as f:
-        f.write("*Training*\n")
-        for i,metric in enumerate(metrics):
-            f.write(metric+": "+str(results_train[i][0])+" ("+str(results_train[i][1])+")")
-            f.write("\n")
-        f.write("*Validation*\n")
-        for i,metric in enumerate(metrics):
-            f.write(metric+": "+str(results_val[i][0])+" ("+str(results_val[i][1])+")")
-            f.write("\n")
-        f.write("*Test*\n")
         for i,metric in enumerate(metrics):
             f.write(metric+": "+str(results_test[i][0])+" ("+str(results_test[i][1])+")")
             f.write("\n")

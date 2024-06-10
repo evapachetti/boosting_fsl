@@ -14,12 +14,11 @@ from ..selfsupervised.simclr import SimCLR
 from ..ipirm.model import IPIRM
 
 from data.datamgr import SetDataManager
-from methods.protonet import ProtoNet
 from methods.meta_deepbdc import MetaDeepBDC
 from utils import *
 from libauc.optimizers import PESG
 from libauc.losses import AUCMLoss
-
+import argparse
 
 def train(params, base_loader, train_loader, val_loader, model, stop_epoch, decay_epochs, optimizer):
 
@@ -80,12 +79,9 @@ def main():
 
     parser.add_argument('--learning_rate', type=float, default=1e-3, help='initial learning rate of the backbone')
     parser.add_argument('--weight_decay', type=float, default=1e-3, help='weight decay of the backbone')
-    parser.add_argument('--gamma', type=float, default=0.1, help='learning rate decay factor')
     parser.add_argument("--margin", default=1.0, type=float, help="Margin")
     parser.add_argument("--epoch_decay", default=0.003, type=float, help="Epoch decay (gamma)")
-    parser.add_argument('--milestones', nargs='+', type=int, default=[40, 80], help='milestones for MultiStepLR')
     parser.add_argument('--epoch', default=100, type=int, help='Stopping epoch')
-    parser.add_argument('--gpu', default='0', help='gpu id')
     parser.add_argument("--feature_dim", default=128, type=int, help="Embedding size")
 
     parser.add_argument('--metatrain_dataset', default='picai', choices=['picai','breakhis'])
@@ -93,7 +89,6 @@ def main():
 
     parser.add_argument('--csv_path_train', default='', type=str, help='trainset path')
     parser.add_argument('--csv_path_val', default='', type=str, help='valset path')
-    parser.add_argument('--csv_path_test', default='', type=str, help='valset path')
 
     parser.add_argument('--model', default='Resnet50', type=str, choices=['Resnet18','Resnet50','VGG16','Densenet'])
     parser.add_argument('--method', default='meta_deepbdc', choices='meta_deepbdc')
@@ -115,7 +110,6 @@ def main():
 
     params = parser.parse_args()
 
-    num_gpu = set_gpu(params)
     set_seed(params.seed)
 
     # TRAINING
